@@ -52,7 +52,7 @@ read_blubber() %>%
   rename_with(~str_remove(.x, "blubber_") %>% str_replace("_", " ")) %>% 
   na.omit() %>% 
   cor() %>% 
-  ggcorrplot::ggcorrplot(lab = TRUE, digits = 1, lab_size = 3, show.legend = FALSE, tl.cex = 10)
+  ggcorrplot::ggcorrplot(lab = TRUE, digits = 1, lab_size = 2, show.legend = FALSE, tl.cex = 10)
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
