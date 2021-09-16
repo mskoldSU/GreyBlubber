@@ -17,8 +17,9 @@ read_blubber <- function(){
            pregnant = ifelse((pregnant != "P")|is.na(pregnant), FALSE, TRUE),
            quarter = as.factor(paste0("Q", ceiling(month/3))),
            across(starts_with("circ"), ~.*10/(2*pi), .names = "radi_{.col}"),
-           BMI1 = body_weight / (body_length/100)^2,
-           BMI2 = body_weight / (body_length/100)^3) %>% 
+           BMI = body_weight / (body_length/100)^2,
+           CI = body_weight / (body_length/100)^3,
+           WI = circ_chest / body_length) %>% 
     rename_with(~str_remove(.x, "_circ"), starts_with("radi")) %>% 
     rowwise() %>% 
     mutate(mean_area = mean(c_across(starts_with("radi"))^2 * pi / 10000, na.rm = TRUE),
@@ -51,11 +52,35 @@ longer_blubber <- function(data){
     filter(!is.na(value))
 }
 
+longer_dorsal_ventral <- function(data){
+  ventral <- data %>% select(-ends_with("dorsal"), -ends_with("side")) %>% 
+    pivot_longer(starts_with("blubber"), names_to = "pos", values_to = "value") %>% 
+    mutate(pos = str_remove(pos, "blubber_")) %>% 
+    separate(pos, into = c("pos1", "pos2"), sep = "_") %>% 
+    mutate(pos1 = fct_relevel(pos1, "neck", "chest", "umbili", "hips"))
+  dorsal <- data %>% select(accnr, ends_with("dorsal")) %>% 
+    pivot_longer(starts_with("blubber"), names_to = "pos", values_to = "value") %>% 
+    mutate(pos = str_remove(pos, "blubber_")) %>% 
+    separate(pos, into = c("pos1", "pos2"), sep = "_") %>% 
+    mutate(pos1 = fct_relevel(pos1, "neck", "chest", "umbili", "hips"))
+  left_join(ventral, dorsal, by = c("accnr", "pos1"), suffix = c("_ventral", "_dorsal"))
+}
+
 read_skin <- function(){
   # Reads data with skin thickness from Excel sheet
   readxl::read_excel("data/data_excel.xlsx", sheet = "skin") %>% 
-    select(blubber_chest_ventral = "Ventral blubber chest mm", starts_with("skin")) %>% 
+    select(blubber = "Ventral blubber chest mm", starts_with("skin"), "body length") %>% 
+    janitor::clean_names() %>% 
     rowwise() %>% 
-    mutate(skin_mean = mean(c_across(starts_with("skin")), na.rm = TRUE)) %>% 
+    mutate(skin_mean = mean(c_across(starts_with("skin")), na.rm = TRUE),
+           blubber_w_skin = blubber + skin_chest_mm) %>% 
     ungroup()
+}
+conversion_table <- function(data){
+  name <- pull(data, term)
+  factor <- exp(pull(data, estimate))
+  matrix <- factor %*% t(1 / factor) %>% 
+    as.data.frame()
+  names(matrix) <- name
+  bind_cols(data.frame(Name = name), matrix)
 }
