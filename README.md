@@ -278,7 +278,7 @@ prcomp(pca_data %>% select(-quarter, -group),
 
 ![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
-# Figure S2
+### Figure S2
 
 ``` r
 read_skin() %>% ggplot(aes(x = body_length, y = skin_chest_mm)) +
